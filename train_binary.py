@@ -77,7 +77,7 @@ def train_step(model, optimizer, data_loader, epoch, batch_accum, device=device)
 
         scores = dist(output1, output2)
 
-        preds = torch.nn.Sigmoid(scores)
+        preds = torch.nn.Sigmoid()(scores)
 
         loss = loss_fn(preds, targets)
         loss_value = loss.item()
@@ -122,7 +122,7 @@ def val_step(model, data_loader, epoch, device=device):
         targets = torch.unsqueeze(targets, dim=-1).type(torch.float)
         output1, output2 = model(images_1, images_2)
         scores = dist(output1, output2)
-        preds = torch.nn.Sigmoid(scores)
+        preds = torch.nn.Sigmoid()(scores)
 
         loss = loss_fn(preds, targets)
         loss_value = loss.item()
