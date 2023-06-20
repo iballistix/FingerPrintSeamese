@@ -109,7 +109,7 @@ def val_step(model, data_loader, epoch, device=device):
 
     data_loop = tqdm(enumerate(data_loader), total=len(data_loader), leave=False)
     data_loop.set_description('Epoch {} - Validation'.format(epoch))
-    for i, (images, targets) in data_loop:
+    for i, (images_1, images_2, targets) in data_loop:
         images_1 = images_1.to(device)
         images_2 = images_2.to(device)
         targets = targets.to(device)
