@@ -1,6 +1,7 @@
 import torch
+import torchvision
+import torchvision.utils
 import torch.nn as nn
-from torchvision.models import resnet50
 
 
 class SiameseNetwork(nn.Module):
@@ -13,7 +14,7 @@ class SiameseNetwork(nn.Module):
         self.net_parameters = []  # List of parameters requiring grad
 
         #self.model_conv = torchvision.models.resnet18(pretrained=pretrained)
-        self.model_conv = resnet50(pretrained=pretrained)
+        self.model_conv = torchvision.models.resnet50(pretrained=pretrained)
         #self.model_conv = torchvision.models.resnet101(pretrained=pretrained)
 
         self.fc = nn.Sequential(
@@ -48,7 +49,7 @@ class SiameseNetwork(nn.Module):
         output1 = self.forward_once(input1)
         output2 = self.forward_once(input2)
 
-        output = torch.cat((output1, output2), 1)
-        output = self.fc(output)
+        #output = torch.cat((output1, output2), 1)
+        #output = self.fc(output)
 
-        return output
+        return output1, output2

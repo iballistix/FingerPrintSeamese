@@ -50,8 +50,9 @@ class ContrastiveLoss(torch.nn.Module):
         return loss_contrastive
 
 
-#loss_fn = ContrastiveLoss()
-loss_fn = torch.nn.BCELoss()
+loss_fn = ContrastiveLoss()
+#loss_fn = torch.nn.BCELoss()
+dist = torch.nn.PairwiseDistance()
 
 def F1(targets, preds):
     return f1_score(targets.cpu().detach().numpy(), (torch.nn.Sigmoid()(preds) > 0.5).cpu().detach().numpy(),
@@ -72,7 +73,12 @@ def train_step(model, optimizer, data_loader, epoch, batch_accum, device=device)
         images_2 = images_2.to(device)
         targets = targets.to(device)
         targets = torch.unsqueeze(targets, dim=-1).type(torch.float)
-        preds = model(images_1, images_2)
+        output1, output2 = model(images_1, images_2)
+
+        scores = dist(output1, output2)
+
+        preds = torch.nn.Sigmoid(scores)
+
         loss = loss_fn(preds, targets)
         loss_value = loss.item()
         running_loss += loss_value
@@ -114,7 +120,9 @@ def val_step(model, data_loader, epoch, device=device):
         images_2 = images_2.to(device)
         targets = targets.to(device)
         targets = torch.unsqueeze(targets, dim=-1).type(torch.float)
-        preds = model(images_1, images_2)
+        output1, output2 = model(images_1, images_2)
+        scores = dist(output1, output2)
+        preds = torch.nn.Sigmoid(scores)
 
         loss = loss_fn(preds, targets)
         loss_value = loss.item()
