@@ -85,10 +85,10 @@ def train_step(model, optimizer, data_loader, epoch, batch_accum, device=device)
 
         if i == 0:
             targets_arr = np.array(targets.cpu().detach().numpy())
-            preds_arr = np.array((torch.nn.Sigmoid()(preds) > 0.5).cpu().detach().numpy())
+            preds_arr = np.array(preds.cpu().detach().numpy())
         else:
             targets_arr = np.concatenate([targets_arr, np.array(targets.cpu().detach().numpy())])
-            preds_arr = np.concatenate([preds_arr, np.array((torch.nn.Sigmoid()(preds) > 0.5).cpu().detach().numpy())])
+            preds_arr = np.concatenate([preds_arr, np.array(preds.cpu().detach().numpy())])
         num_data += len(preds)
 
         # Update progress bar
