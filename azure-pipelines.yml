@@ -1,0 +1,37 @@
+trigger:
+  tags:
+    include:
+    - v*
+  branches:
+    include:
+    - release/*
+    - support/*
+    - develop
+    - master
+
+pr:
+- master
+- develop
+
+pool:
+  vmImage: ubuntu-latest
+
+steps:
+- task: gitversion/setup@0
+  inputs:
+    versionSpec: '5.x'
+
+- task: gitversion/execute@0
+
+- bash: |
+    echo "##vso[task.setvariable variable=dockertag]$(echo $(Build.BuildNumber) | tr + -)"
+  displayName: "Set dockertag variable"
+
+- task: Docker@2
+  displayName: "Docker build and push"
+  inputs:
+    containerRegistry: 'acriballistixdev'
+    repository: 'bf_classifier'
+    command: 'buildAndPush'
+    Dockerfile: '**/Dockerfile'
+    tags: '$(DOCKERTAG)'

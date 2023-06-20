@@ -1,0 +1,9 @@
+data/
+notebooks/
+.ipynb_checkpoints/
+__pycache__/
+venv/
+.idea/
+logs/*
+saved_models/*
+configs/train_config.yaml

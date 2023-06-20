@@ -1,0 +1,7 @@
+img_size: 512
+num_iterations: 7
+random_deviation: 20
+probability_threshold: 0.9
+random_seed: 2022
+
+
