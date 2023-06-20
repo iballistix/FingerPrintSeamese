@@ -42,7 +42,7 @@ class SiameseNetwork(nn.Module):
         output = self.model_conv(x)
         # if self.lastLayer:
         #     output = self.extraL(output)
-        output = self.fc(output)
+        #output = self.fc(output)
         return output
 
     def forward(self, input1, input2):
