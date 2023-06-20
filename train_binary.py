@@ -50,8 +50,8 @@ class ContrastiveLoss(torch.nn.Module):
         return loss_contrastive
 
 
-loss_fn = ContrastiveLoss()
-
+#loss_fn = ContrastiveLoss()
+loss_fn = torch.nn.BCELoss()
 
 def F1(targets, preds):
     return f1_score(targets.cpu().detach().numpy(), (torch.nn.Sigmoid()(preds) > 0.5).cpu().detach().numpy(),
