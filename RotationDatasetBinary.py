@@ -88,9 +88,9 @@ class DatasetTrain(SeameseDataset):
     def __init__(self, label_path, img_size, transform=None, th=70):
         label_df = pd.read_csv(label_path).reset_index(drop=True)
 
-        label_df = pd.DataFrame(list(combinations(label_df['path'], 2)), columns=['path_1', 'path_2'])
-        label_df['bag_1'] = label_df['path_1'].str.split('/').str[-2]
-        label_df['bag_2'] = label_df['path_2'].str.split('/').str[-2]
+        label_df = pd.DataFrame(np.array(list(combinations(np.array(label_df[['path', 'bag']]), 2))).reshape((-1, 4)),
+                          columns=['path_1', 'bag_1', 'path_2', 'bag_2'])
+
         label_df['target'] = label_df['bag_1'] == label_df['bag_2']
         label_df = label_df.groupby('target').sample(label_df['target'].sum()).reset_index(drop=True)
 
@@ -102,9 +102,8 @@ class DatasetTrain(SeameseDataset):
 class DatasetTest(SeameseDataset):
     def __init__(self, label_path, img_size, transform=None):
         label_df = pd.read_csv(label_path).reset_index(drop=True)
-        label_df = pd.DataFrame(list(combinations(label_df['path'], 2)), columns=['path_1', 'path_2'])
-        label_df['bag_1'] = label_df['path_1'].str.split('/').str[-2]
-        label_df['bag_2'] = label_df['path_2'].str.split('/').str[-2]
+        label_df = pd.DataFrame(np.array(list(combinations(np.array(label_df[['path', 'bag']]), 2))).reshape((-1, 4)),
+                                columns=['path_1', 'bag_1', 'path_2', 'bag_2'])
         label_df['target'] = label_df['bag_1'] == label_df['bag_2']
         label_df = label_df.groupby('target').sample(label_df['target'].sum(), random_state=10).reset_index(drop=True)
 
