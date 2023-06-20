@@ -84,11 +84,11 @@ def train_step(model, optimizer, data_loader, epoch, batch_accum, device=device)
             optimizer.zero_grad()
 
         if i == 0:
-            targets_arr = np.array(targets.cpu().detach().numpy())
-            preds_arr = np.array(preds.cpu().detach().numpy())
+            targets_arr = np.array((targets > 0.5).cpu().detach().numpy())
+            preds_arr = np.array((preds > 0.5).cpu().detach().numpy())
         else:
-            targets_arr = np.concatenate([targets_arr, np.array(targets.cpu().detach().numpy())])
-            preds_arr = np.concatenate([preds_arr, np.array(preds.cpu().detach().numpy())])
+            targets_arr = np.concatenate([targets_arr, np.array((targets > 0.5).cpu().detach().numpy())])
+            preds_arr = np.concatenate([preds_arr, np.array((preds > 0.5).cpu().detach().numpy())])
         num_data += len(preds)
 
         # Update progress bar
@@ -121,11 +121,11 @@ def val_step(model, data_loader, epoch, device=device):
         running_loss += loss_value
 
         if i == 0:
-            targets_arr = np.array(targets.cpu().detach().numpy())
-            preds_arr = np.array((torch.nn.Sigmoid()(preds) > 0.5).cpu().detach().numpy())
+            targets_arr = np.array((targets > 0.5).cpu().detach().numpy())
+            preds_arr = np.array((preds > 0.5).cpu().detach().numpy())
         else:
-            targets_arr = np.concatenate([targets_arr, np.array(targets.cpu().detach().numpy())])
-            preds_arr = np.concatenate([preds_arr, np.array((torch.nn.Sigmoid()(preds) > 0.5).cpu().detach().numpy())])
+            targets_arr = np.concatenate([targets_arr, np.array((targets > 0.5).cpu().detach().numpy())])
+            preds_arr = np.concatenate([preds_arr, np.array((preds > 0.5).cpu().detach().numpy())])
         num_data += len(preds)
 
     val_f1 = f1_score(targets_arr, preds_arr, average='weighted')
