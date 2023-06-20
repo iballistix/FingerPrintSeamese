@@ -18,8 +18,7 @@ class SiameseNetwork(nn.Module):
         #self.model_conv = torchvision.models.resnet101(pretrained=pretrained)
 
         self.fc = nn.Sequential(
-            nn.Linear(2000, 1),
-            nn.Sigmoid()
+            nn.Linear(1000, 2)
         )
 
         if pretrained:
@@ -43,6 +42,7 @@ class SiameseNetwork(nn.Module):
         output = self.model_conv(x)
         # if self.lastLayer:
         #     output = self.extraL(output)
+        output = self.fc(output)
         return output
 
     def forward(self, input1, input2):
