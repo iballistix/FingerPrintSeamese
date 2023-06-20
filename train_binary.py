@@ -7,7 +7,7 @@ import yaml
 from sklearn.metrics import f1_score
 from torch.utils.tensorboard import SummaryWriter
 from tqdm import tqdm
-
+import torch.nn.functional as F
 from RotationDatasetBinary import data_loader_train, data_loader_test
 from model import SiameseNetwork
 
@@ -33,22 +33,21 @@ with open(args.config, 'r') as stream:
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
 
-class ContrastiveLoss(torch.nn.Module):
-    """
-    Contrastive loss function.
-    Based on: http://yann.lecun.com/exdb/publis/pdf/hadsell-chopra-lecun-06.pdf
-    """
 
+# Define the Contrastive Loss Function
+class ContrastiveLoss(torch.nn.Module):
     def __init__(self, margin=2.0):
         super(ContrastiveLoss, self).__init__()
         self.margin = margin
 
-    def forward(self, distance, label):
-        loss_contrastive = torch.mean((1-label) * torch.pow(distance, 2) +
-                                      (label) * torch.pow(torch.clamp(self.margin - distance, min=0.0), 2))
+    def forward(self, output1, output2, label):
+      # Calculate the euclidean distance and calculate the contrastive loss
+      euclidean_distance = F.pairwise_distance(output1, output2, keepdim = True)
 
-        return loss_contrastive
+      loss_contrastive = torch.mean((1-label) * torch.pow(euclidean_distance, 2) +
+                                    (label) * torch.pow(torch.clamp(self.margin - euclidean_distance, min=0.0), 2))
 
+      return loss_contrastive
 
 loss_fn = ContrastiveLoss()
 #loss_fn = torch.nn.BCELoss()
@@ -75,12 +74,9 @@ def train_step(model, optimizer, data_loader, epoch, batch_accum, device=device)
         targets = torch.unsqueeze(targets, dim=-1).type(torch.float)
         output1, output2 = model(images_1, images_2)
 
-        scores = dist(output1, output2)
-        linear = torch.nn.Linear(1, 1)
-        output = linear(scores)
-        preds = torch.nn.Sigmoid()(output)
+        loss = loss_fn(output1, output2, targets)
 
-        loss = loss_fn(scores, targets)
+        #loss = loss_fn(scores, targets)
         loss_value = loss.item()
         running_loss += loss_value
 
@@ -90,23 +86,14 @@ def train_step(model, optimizer, data_loader, epoch, batch_accum, device=device)
             optimizer.step()
             optimizer.zero_grad()
 
-        if i == 0:
-            targets_arr = np.array((targets > 0.5).cpu().detach().numpy())
-            preds_arr = np.array((preds > 0.5).cpu().detach().numpy())
-        else:
-            targets_arr = np.concatenate([targets_arr, np.array((targets > 0.5).cpu().detach().numpy())])
-            preds_arr = np.concatenate([preds_arr, np.array((preds > 0.5).cpu().detach().numpy())])
-        num_data += len(preds)
-
         # Update progress bar
         loop_description = 'Epoch (train) - {}/{}'.format(epoch, cfg['epochs'])
         data_loop.set_description(loop_description)
         data_loop.set_postfix(loss=loss_value)
-    epoch_f1 = f1_score(targets_arr, preds_arr, average='weighted')
     epoch_loss = running_loss / len(data_loader)
     total_num_data = len(data_loader) * bs
     print('Train Results (Total {})'.format(total_num_data))
-    return epoch_loss, epoch_f1
+    return epoch_loss
 
 
 def val_step(model, data_loader, epoch, device=device):
@@ -123,28 +110,16 @@ def val_step(model, data_loader, epoch, device=device):
         targets = torch.unsqueeze(targets, dim=-1).type(torch.float)
         output1, output2 = model(images_1, images_2)
 
-        scores = dist(output1, output2)
-        linear = torch.nn.Linear(1, 1)
-        output = linear(scores)
-        preds = torch.nn.Sigmoid()(output)
-
-        loss = loss_fn(scores, targets)
+        loss = loss_fn(output1, output2, targets)
         loss_value = loss.item()
         running_loss += loss_value
 
-        if i == 0:
-            targets_arr = np.array((targets > 0.5).cpu().detach().numpy())
-            preds_arr = np.array((preds > 0.5).cpu().detach().numpy())
-        else:
-            targets_arr = np.concatenate([targets_arr, np.array((targets > 0.5).cpu().detach().numpy())])
-            preds_arr = np.concatenate([preds_arr, np.array((preds > 0.5).cpu().detach().numpy())])
-        num_data += len(preds)
 
-    val_f1 = f1_score(targets_arr, preds_arr, average='weighted')
+
     val_loss = running_loss / len(data_loader)
     print('Validation Results (Total {})'.format(len(data_loader)))
 
-    return val_loss, val_f1
+    return val_loss
 
 
 def train_model(model, cfg):
@@ -172,20 +147,20 @@ def train_model(model, cfg):
                                                                      cfg['batch_size'])
             test_dataloader = data_loader_test(cfg['test_label_path'], cfg['img_size'], 1)
 
-            train_loss, train_f1 = train_step(model, optimizer,
+            train_loss = train_step(model, optimizer,
                                               train_dataloader,
                                               epoch,
                                               cfg['batch_accum'])
             writer.add_scalar('loss/train_loss', train_loss, global_step=epoch)
-            writer.add_scalar('acc/train_f1', train_f1, global_step=epoch)
 
-            test_loss, test_f1 = val_step(model, test_dataloader, epoch)
+
+            test_loss = val_step(model, test_dataloader, epoch)
 
             writer.add_scalar('loss/test_loss', test_loss, global_step=epoch)
-            writer.add_scalar('acc/test_f1', test_f1, global_step=epoch)
 
-            print('Epoch {} - Train Loss: {} - Train F1: {} - Test Loss: {} - Test F1: {} -'
-                  .format(epoch, train_loss, train_f1, test_loss, test_f1))
+
+            print('Epoch {} - Train Loss: {} - Test Loss: {}'
+                  .format(epoch, train_loss, test_loss))
 
             if test_loss > best_loss:
                 patience_lvl += 1
