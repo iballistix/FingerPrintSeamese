@@ -18,7 +18,7 @@ np.random.seed(0)
 class Args():
     def __init__(self):
         self.config = 'configs/train_config.yaml'
-        self.model_path = 'saved_models/exp1.pt'
+        self.model_path = None
 
 
 args = Args()

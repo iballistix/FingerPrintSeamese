@@ -49,22 +49,22 @@ class SeameseDataset(Dataset):
         img_1 = np.asarray(Image.open(img_1_path))
         img_2 = np.asarray(Image.open(img_2_path))
 
+        if self.train:
+            # Rotation on random angle
+            img_1 = np.array(Image.fromarray(img_1).rotate(np.random.uniform(-int(cfg['random_angle']), int(cfg['random_angle']))))
+            img_2 = np.array(Image.fromarray(img_2).rotate(np.random.uniform(-int(cfg['random_angle']), int(cfg['random_angle']))))
 
-        # Rotation on random angle
-        img_1 = np.array(Image.fromarray(img_1).rotate(np.random.uniform(-int(cfg['random_angle']), int(cfg['random_angle']))))
-        img_2 = np.array(Image.fromarray(img_2).rotate(np.random.uniform(-int(cfg['random_angle']), int(cfg['random_angle']))))
+            x_shift = np.random.uniform(-20, 20)
+            y_shift = np.random.uniform(-20, 20)
+            num_rows, num_cols = img_1.shape[:2]
+            translation_matrix = np.float32([[1, 0, x_shift], [0, 1, y_shift]])
+            img_1 = cv2.warpAffine(img_1, translation_matrix, (num_cols, num_rows))
 
-        x_shift = np.random.uniform(-20, 20)
-        y_shift = np.random.uniform(-20, 20)
-        num_rows, num_cols = img_1.shape[:2]
-        translation_matrix = np.float32([[1, 0, x_shift], [0, 1, y_shift]])
-        img_1 = cv2.warpAffine(img_1, translation_matrix, (num_cols, num_rows))
-
-        x_shift = np.random.uniform(-20, 20)
-        y_shift = np.random.uniform(-20, 20)
-        num_rows, num_cols = img_2.shape[:2]
-        translation_matrix = np.float32([[1, 0, x_shift], [0, 1, y_shift]])
-        img_2 = cv2.warpAffine(img_2, translation_matrix, (num_cols, num_rows))
+            x_shift = np.random.uniform(-20, 20)
+            y_shift = np.random.uniform(-20, 20)
+            num_rows, num_cols = img_2.shape[:2]
+            translation_matrix = np.float32([[1, 0, x_shift], [0, 1, y_shift]])
+            img_2 = cv2.warpAffine(img_2, translation_matrix, (num_cols, num_rows))
 
         # Applying augmentations
         if self.transform is not None:
@@ -96,7 +96,7 @@ class DatasetTrain(SeameseDataset):
 
         SeameseDataset.__init__(self, label_df, img_size, transform)
         self.target_df = label_df['target'].astype('int')
-
+        self.train = True
 
 
 class DatasetTest(SeameseDataset):
@@ -109,7 +109,7 @@ class DatasetTest(SeameseDataset):
 
         SeameseDataset.__init__(self, label_df, img_size, transform)
         self.target_df = label_df['target'].astype('int')
-
+        self.train = False
 
 
 def data_loader_train(label_path, img_size, batch_size):
