@@ -87,12 +87,15 @@ class SeameseDataset(Dataset):
 class DatasetTrain(SeameseDataset):
     def __init__(self, label_path, img_size, transform=None, th=70):
         label_df = pd.read_csv(label_path).reset_index(drop=True)
+        mapping = {x: i for i, x in enumerate(set(label_df['bag']))}
+        label_df['class'] = label_df['bag'].map(mapping)
+        label_df = pd.DataFrame(np.array(list(combinations(np.array(label_df[['path', 'bag', 'class']]), 2))).reshape((-1, 6)),
+                          columns=['path_1', 'bag_1', 'class_1', 'path_2', 'bag_2', 'class_2'])
+        label_df['same'] = label_df['bag_1'] == label_df['bag_2']
+        label_df = label_df.groupby('same').sample(label_df['same'].sum()).reset_index(drop=True)
 
-        label_df = pd.DataFrame(np.array(list(combinations(np.array(label_df[['path', 'bag']]), 2))).reshape((-1, 4)),
-                          columns=['path_1', 'bag_1', 'path_2', 'bag_2'])
+        label_df['target'] = label_df.apply(lambda x: x.class_1 if x.class_1 == x.class_2 else -1, axis=1)
 
-        label_df['target'] = label_df['bag_1'] == label_df['bag_2']
-        label_df = label_df.groupby('target').sample(label_df['target'].sum()).reset_index(drop=True)
 
         SeameseDataset.__init__(self, label_df, img_size, transform)
         self.target_df = label_df['target'].astype('int')
@@ -102,10 +105,16 @@ class DatasetTrain(SeameseDataset):
 class DatasetTest(SeameseDataset):
     def __init__(self, label_path, img_size, transform=None):
         label_df = pd.read_csv(label_path).reset_index(drop=True)
-        label_df = pd.DataFrame(np.array(list(combinations(np.array(label_df[['path', 'bag']]), 2))).reshape((-1, 4)),
-                                columns=['path_1', 'bag_1', 'path_2', 'bag_2'])
-        label_df['target'] = label_df['bag_1'] == label_df['bag_2']
-        label_df = label_df.groupby('target').sample(label_df['target'].sum(), random_state=10).reset_index(drop=True)
+
+        mapping = {x: i for i, x in enumerate(set(label_df['bag']))}
+        label_df['class'] = label_df['bag'].map(mapping)
+        label_df = pd.DataFrame(
+            np.array(list(combinations(np.array(label_df[['path', 'bag', 'class']]), 2))).reshape((-1, 6)),
+            columns=['path_1', 'bag_1', 'class_1', 'path_2', 'bag_2', 'class_2'])
+        label_df['same'] = label_df['bag_1'] == label_df['bag_2']
+        label_df = label_df.groupby('same').sample(label_df['same'].sum(), random_state=10).reset_index(drop=True)
+
+        label_df['target'] = label_df.apply(lambda x: x.class_1 if x.class_1 == x.class_2 else -1, axis=1)
 
         SeameseDataset.__init__(self, label_df, img_size, transform)
         self.target_df = label_df['target'].astype('int')
