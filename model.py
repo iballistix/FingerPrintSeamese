@@ -43,6 +43,8 @@ class SiameseNetwork(nn.Module):
         # if self.lastLayer:
         #     output = self.extraL(output)
         #output = self.fc(output)
+        # L2 normalizing
+        output = torch.nn.functional.normalize(output)
         return output
 
     def forward(self, input1, input2):
